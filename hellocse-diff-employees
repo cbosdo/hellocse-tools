@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+import csv
+import warnings
+import pandas
+import unicodedata
+import click
+
+def normalize(value):
+    """
+    Remove accents and convert to lowercase. Also replace dashes by spaces.
+
+    :param value: the Unicode string to convert
+    """
+    return unicodedata.normalize("NFD", value).encode("ascii", "ignore").decode().lower().replace("-", " ")
+
+
+def load_workday(path):
+    """
+    Load the names from the exported Workday XLSX file
+
+    :param path: Path to the xlsx file
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        df = pandas.read_excel(path, header=1)
+
+    return {normalize(emp.Worker[:emp.Worker.find(' (')]) for emp in df.itertuples()}
+
+
+def load_hellocse(path):
+    """
+    Load the names from the exported HelloCSE CSV file
+
+    :param path: Path to the csv file
+    """
+    with open(path, newline="") as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=";")
+        return {normalize("{} {}".format(row["Prénom"], row["Nom"])) for row in reader}
+
+
+@click.command(short_help="Compare hello cse export with Workday's one")
+@click.argument("hellocse", nargs=1, type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
+@click.argument("workday", nargs=1, type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
+def main(hellocse, workday):
+    """
+    Do the the data comparison and output the results
+    """
+    workday_names = load_workday(workday)
+    hellocse_names = load_hellocse(hellocse)
+
+    arrived = workday_names - hellocse_names
+    left = hellocse_names - workday_names
+    print("Nouveaux: {}".format(", ".join(arrived) if arrived else ""))
+    print("Départs: {}".format(", ".join(left) if left else ""))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+import csv
+import click
+import datetime
+import sys
+
+children_birthdates_headers = ["Date de naissance enfant 1", "Date de naissance enfant 2", "Date de naissance enfant 3", "Date de naissance enfant 4"]
+
+def load_employees(path):
+    """
+    Load the hello CSE CSV export file into dictionaries
+    """
+    with open(path, newline="") as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=";")
+        data = []
+        for row in reader:
+            data.append({
+                "first_name": row["Prénom"],
+                "last_name": row["Nom"],
+                "email": row["Email"],
+            })
+
+            children_birthdates = [row[header] for header in children_birthdates_headers if row[header]]
+            children_rows = [{
+                "first_name": row["Prénom"],
+                "last_name": row["Nom"],
+                "email": row["Email"],
+                "child_birth_date": datetime.date.fromisoformat(d)
+                } for d in children_birthdates]
+            data += children_rows
+        return data
+
+
+def print_csv(headers, data):
+    """
+    Print the data as semi-colon separated CSV to stdout
+    """
+    writer = csv.DictWriter(sys.stdout, headers, delimiter=";")
+    writer.writeheader()
+    writer.writerows(data)
+
+
+@click.group()
+@click.argument(
+    "path",
+    nargs=1,
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+)
+@click.pass_context
+def cli(ctx, path):
+    ctx.obj = path
+
+
+@cli.command()
+@click.pass_context
+def list(ctx):
+    data = load_employees(ctx.obj)
+    print_csv(["first_name", "last_name", "email", "child_birth_date"], data)
+
+
+@cli.command()
+@click.option("--employee", default=170, help="Amount of christmas checks per employee")
+@click.option("--child", default=60, help="Amount of christmas checks per child")
+@click.pass_context
+def xmas(ctx, employee, child):
+    """
+    Do the the data comparison and output the results
+    """
+    employees = load_employees(ctx.obj)
+
+    checks = []
+    this_year = datetime.date.today().year
+    for row in employees:
+        birthdate = row.pop("child_birth_date", None)
+        if birthdate is None:
+            row["noel_salaries"] = employee
+            checks.append(row)
+        elif this_year - birthdate.year <= 16:
+            row["noel_enfants"] = child
+            checks.append(row)
+
+    fieldnames = [
+        "external_id",
+        "email",
+        "last_name",
+        "first_name",
+        "activated_at",
+        "noel_salaries",
+        "noel_enfants",
+    ]
+    print_csv(fieldnames, checks)
+
+
+if __name__ == "__main__":
+    cli()
