@@ -4,8 +4,6 @@ import click
 import datetime
 import sys
 
-children_birthdates_headers = ["Date de naissance enfant 1", "Date de naissance enfant 2", "Date de naissance enfant 3", "Date de naissance enfant 4"]
-
 def load_employees(path):
     """
     Load the hello CSE CSV export file into dictionaries
@@ -13,6 +11,7 @@ def load_employees(path):
     with open(path, newline="") as csvfile:
         reader = csv.DictReader(csvfile, delimiter=";")
         data = []
+        children_birthdates_headers = [f for f in reader.fieldnames if f.startswith("Date de naissance enfant")]
         for row in reader:
             data.append({
                 "first_name": row["Prénom"],
