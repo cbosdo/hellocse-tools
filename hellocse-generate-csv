@@ -8,23 +8,27 @@ def load_employees(path):
     """
     Load the hello CSE CSV export file into dictionaries
     """
-    with open(path, newline="") as csvfile:
+    with open(path, newline="", encoding='utf_8_sig') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=";")
         data = []
         children_birthdates_headers = [f for f in reader.fieldnames if f.startswith("Date de naissance enfant")]
         for row in reader:
             data.append({
-                "first_name": row["Prénom"],
-                "last_name": row["Nom"],
-                "email": row["Email"],
+                "Prénom": row["Prénom"],
+                "Nom de famille": row["Nom"],
+                "Adresse e-mail": row["Email"],
+                "Identifiant": row["Identifiant"],
+                "Matricule": row["Matricule"],
             })
 
             children_birthdates = [row[header] for header in children_birthdates_headers if row[header]]
             children_rows = [{
-                "first_name": row["Prénom"],
-                "last_name": row["Nom"],
-                "email": row["Email"],
-                "child_birth_date": datetime.date.fromisoformat(d)
+                "Prénom": row["Prénom"],
+                "Nom de famille": row["Nom"],
+                "Adresse e-mail": row["Email"],
+                "Identifiant": row["Identifiant"],
+                "Matricule": row["Matricule"],
+                "Date de naissance enfant": datetime.date.fromisoformat(d)
                 } for d in children_birthdates]
             data += children_rows
         return data
@@ -54,7 +58,7 @@ def cli(ctx, path):
 @click.pass_context
 def list(ctx):
     data = load_employees(ctx.obj)
-    print_csv(["first_name", "last_name", "email", "child_birth_date"], data)
+    print_csv(["Prénom", "Nom de famille", "Adresse e-mail", "Date de naissance enfant"], data)
 
 
 @cli.command()
@@ -70,22 +74,25 @@ def xmas(ctx, employee, child):
     checks = []
     this_year = datetime.date.today().year
     for row in employees:
-        birthdate = row.pop("child_birth_date", None)
+        birthdate = row.pop("Date de naissance enfant", None)
+        row["Quantité"] = 1
         if birthdate is None:
-            row["noel_salaries"] = employee
+            row["Montant Noël"] = employee
             checks.append(row)
         elif this_year - birthdate.year <= 16:
-            row["noel_enfants"] = child
+            row["Montant Noël enfants"] = child
             checks.append(row)
 
     fieldnames = [
-        "external_id",
-        "email",
-        "last_name",
-        "first_name",
-        "activated_at",
-        "noel_salaries",
-        "noel_enfants",
+        "Matricule",
+        "Adresse e-mail",
+        "Identifiant",
+        "Nom de famille",
+        "Prénom",
+        "Date d'activation",
+        "Quantité",
+        "Montant Noël",
+        "Montant Noël enfants",
     ]
     print_csv(fieldnames, checks)
 
