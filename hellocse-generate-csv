@@ -58,7 +58,7 @@ def cli(ctx, path):
 @click.pass_context
 def list(ctx):
     data = load_employees(ctx.obj)
-    print_csv(["Prénom", "Nom de famille", "Adresse e-mail", "Date de naissance enfant"], data)
+    print_csv(["Matricule", "Identifiant", "Prénom", "Nom de famille", "Adresse e-mail", "Date de naissance enfant"], data)
 
 
 @cli.command()
